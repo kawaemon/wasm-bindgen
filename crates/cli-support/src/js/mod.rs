@@ -475,6 +475,8 @@ impl<'a> Context<'a> {
                     ",
                 );
 
+                // K: FIXME: HERE
+
                 if matches!(self.config.mode, OutputMode::Node { module: true }) {
                     let start = start.get_or_insert_with(String::new);
                     start.push_str(&self.generate_node_imports());
@@ -483,10 +485,23 @@ impl<'a> Context<'a> {
                         module_name
                     ))));
                 }
+                {
+                    let start = start.get_or_insert_with(String::new);
+                    start.push_str(&format!(
+                        "\
+import {{ __wbg_set_wasm }} from \"./{module_name}_bg.js\"
+__wbg_set_wasm(wasm);
+                    "
+                    ));
+                }
                 if needs_manual_start {
                     start
                         .get_or_insert_with(String::new)
                         .push_str("\nwasm.__wbindgen_start();\n");
+                }
+                eprintln!("#### start ####");
+                if let Some(start) = start.as_ref() {
+                    eprintln!("{start}");
                 }
             }
 

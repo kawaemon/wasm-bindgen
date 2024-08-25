@@ -646,6 +646,8 @@ impl Output {
                 #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
                 ty: Option<&'static str>,
                 dependencies: BTreeMap<&'a str, &'a str>,
+                #[serde(skip_serializing_if = "Option::is_none")]
+                ty: Option<&'static str>,
             }
             let pj = PackageJson {
                 ty: matches!(gen.mode, OutputMode::Node { module: true }).then_some("module"),
@@ -654,6 +656,7 @@ impl Output {
                     .iter()
                     .map(|(k, v)| (k.as_str(), v.1.as_str()))
                     .collect(),
+                ty: matches!(gen.mode, OutputMode::Node { module: true }).then_some("module"),
             };
             let json = serde_json::to_string_pretty(&pj)?;
             fs::write(out_dir.join("package.json"), json)?;
@@ -674,30 +677,32 @@ impl Output {
 
         let js_path = out_dir.join(&self.stem).with_extension(extension);
 
+        //  matches!(
+        //      self,
+        //      OutputMode::Bundler { .. } | OutputMode::Node { module: true }
+        //  )
         if gen.mode.esm_integration() {
             let js_name = format!("{}_bg.{}", self.stem, extension);
 
             let start = gen.start.as_deref().unwrap_or("");
 
+            // K: FIXME: HERE
             if matches!(gen.mode, OutputMode::Node { .. }) {
                 write(
                     &js_path,
                     format!(
                         "
-import {{ __wbg_set_wasm }} from \"./{js_name}\";
 {start}
-__wbg_set_wasm(wasm);
 export * from \"./{js_name}\";",
                     ),
                 )?;
+            // Bundler
             } else {
                 write(
                     &js_path,
                     format!(
                         "
 import * as wasm from \"./{wasm_name}.wasm\";
-import {{ __wbg_set_wasm }} from \"./{js_name}\";
-__wbg_set_wasm(wasm);
 export * from \"./{js_name}\";
 {start}"
                     ),
