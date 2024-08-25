@@ -646,8 +646,6 @@ impl Output {
                 #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
                 ty: Option<&'static str>,
                 dependencies: BTreeMap<&'a str, &'a str>,
-                #[serde(skip_serializing_if = "Option::is_none")]
-                ty: Option<&'static str>,
             }
             let pj = PackageJson {
                 ty: matches!(gen.mode, OutputMode::Node { module: true }).then_some("module"),
@@ -656,7 +654,6 @@ impl Output {
                     .iter()
                     .map(|(k, v)| (k.as_str(), v.1.as_str()))
                     .collect(),
-                ty: matches!(gen.mode, OutputMode::Node { module: true }).then_some("module"),
             };
             let json = serde_json::to_string_pretty(&pj)?;
             fs::write(out_dir.join("package.json"), json)?;
